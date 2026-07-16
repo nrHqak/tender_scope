@@ -22,6 +22,8 @@ streamlit run app/dashboard.py
 
 Пайплайн автоматически создаёт `data/raw/synthetic_goszakup.csv`, если файла ещё нет, и сохраняет результат в `data/processed/scored_tenders.parquet`.
 
+При развёртывании на Streamlit Community Cloud дашборд выполняет этот synthetic-пайплайн автоматически при первом запуске, если сгенерированные CSV/parquet отсутствуют в репозитории.
+
 Запуск тестов:
 
 ```bash

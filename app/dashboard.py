@@ -18,9 +18,11 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.network import build_supplier_graph, supplier_graph_figure
+from src.pipeline import parse_args, run_pipeline
 
 
 DEFAULT_SCORED_PATH = ROOT / "data" / "processed" / "scored_tenders.parquet"
+DEFAULT_SYNTHETIC_PATH = ROOT / "data" / "raw" / "synthetic_goszakup.csv"
 RISK_RED = "#C2413B"
 RISK_AMBER = "#D69E2E"
 RISK_GREEN = "#2F855A"
@@ -29,6 +31,20 @@ RISK_GREEN = "#2F855A"
 @st.cache_data(show_spinner=False)
 def load_scored_data(path: str) -> pd.DataFrame:
     return pd.read_parquet(path)
+
+
+@st.cache_resource(show_spinner=False)
+def ensure_demo_data(output_path: str, synthetic_path: str) -> None:
+    """Build deploy-ready demo data once when generated artifacts are absent."""
+    output = Path(output_path)
+    if output.exists():
+        return
+    args = parse_args([
+        "--source", "synthetic",
+        "--synthetic-path", synthetic_path,
+        "--output", output_path,
+    ])
+    run_pipeline(args)
 
 
 def normalize_factors(value: Any) -> list[dict[str, Any]]:
@@ -192,8 +208,12 @@ def main() -> None:
     )
 
     if not DEFAULT_SCORED_PATH.exists():
-        st.error("Не найден scored_tenders.parquet. Сначала выполните: python -m src.pipeline --source synthetic")
-        st.stop()
+        try:
+            with st.spinner("Подготавливаем демонстрационные данные для первого запуска…"):
+                ensure_demo_data(str(DEFAULT_SCORED_PATH), str(DEFAULT_SYNTHETIC_PATH))
+        except (OSError, ValueError) as error:
+            st.error(f"Не удалось подготовить демонстрационные данные: {error}")
+            st.stop()
     data = load_scored_data(str(DEFAULT_SCORED_PATH))
     if data.empty:
         st.warning("В файле нет тендеров для отображения.")
