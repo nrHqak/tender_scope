@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101116">
+  <title>Tender Scope — техническое решение</title>
+  <style>
+    :root {
+      --bg: #101116;
+      --bg-soft: #151720;
+      --ink: #f7f8fc;
+      --muted: #9ca5b8;
+      --line: rgba(255, 255, 255, 0.12);
+      --blue: #2648ff;
+      --blue-2: #172ca5;
+      --blue-3: #0e184e;
+      --cyan: #7aa6ff;
+      --green: #67d7a5;
+      --amber: #f5c46b;
+      --red: #ff7272;
+      --font: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 90% 5%, rgba(38, 72, 255, 0.14), transparent 26%),
+        linear-gradient(120deg, rgba(255,255,255,0.015), transparent 40%);
+      z-index: 2;
+    }
+
+    .deck { width: 100%; height: 100%; position: relative; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: clamp(34px, 5vw, 84px) clamp(42px, 6vw, 112px) clamp(54px, 6vw, 92px);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(28px);
+      transition: opacity 280ms ease, transform 340ms ease, visibility 280ms;
+      overflow: hidden;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+    }
+
+    .frame {
+      width: min(100%, 1500px);
+      height: 100%;
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 18px;
+      color: var(--cyan);
+      font-size: clamp(14px, 1.1vw, 20px);
+      font-weight: 750;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 26px;
+      max-width: 850px;
+      font-size: clamp(62px, 8vw, 128px);
+      line-height: 0.88;
+      letter-spacing: -0.065em;
+    }
+
+    h2 {
+      margin-bottom: clamp(24px, 3vw, 44px);
+      max-width: 1180px;
+      font-size: clamp(36px, 4.5vw, 68px);
+      line-height: 1.02;
+      letter-spacing: -0.045em;
+    }
+
+    h3 {
+      margin-bottom: 12px;
+      font-size: clamp(20px, 1.7vw, 28px);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    p, li {
+      font-size: clamp(16px, 1.25vw, 22px);
+      line-height: 1.46;
+    }
+
+    .muted { color: var(--muted); }
+    .accent { color: var(--cyan); }
+    .nowrap { white-space: nowrap; }
+
+    .brand-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+      align-items: center;
+      gap: clamp(34px, 6vw, 96px);
+    }
+
+    .mission {
+      max-width: 770px;
+      margin-bottom: clamp(30px, 4vw, 58px);
+      color: #d9deea;
+      font-size: clamp(21px, 1.8vw, 30px);
+      line-height: 1.35;
+    }
+
+    .signal-row {
+      display: flex;
+      gap: clamp(22px, 3vw, 52px);
+      flex-wrap: wrap;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+
+    .signal strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: clamp(24px, 2.3vw, 38px);
+      letter-spacing: -0.035em;
+    }
+
+    .signal span { color: var(--muted); font-size: clamp(14px, 1vw, 18px); }
+
+    .scope-mark {
+      width: min(36vw, 540px);
+      aspect-ratio: 1;
+      position: relative;
+      margin-left: auto;
+      border-radius: 50%;
+      background: radial-gradient(circle, #17266f 0 36%, #090b12 36.5% 53%, #152269 53.5% 66%, #0b0d15 66.5% 74%, #1c38d7 74.5% 88%, transparent 88.5%);
+      filter: drop-shadow(0 30px 80px rgba(14, 38, 177, 0.28));
+    }
+
+    .scope-mark::after {
+      content: "13 321";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-size: clamp(34px, 3.5vw, 58px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .scope-mark small {
+      position: absolute;
+      inset: 57% 0 auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(12px, 0.9vw, 16px);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      z-index: 2;
+    }
+
+    .data-layout {
+      display: grid;
+      grid-template-columns: minmax(360px, 0.92fr) minmax(0, 1.08fr);
+      gap: clamp(46px, 6vw, 96px);
+      align-items: center;
+    }
+
+    .dataset-total {
+      font-size: clamp(58px, 7vw, 112px);
+      font-weight: 850;
+      line-height: 0.9;
+      letter-spacing: -0.06em;
+    }
+
+    .dataset-label { color: var(--muted); font-size: clamp(17px, 1.3vw, 22px); }
+
+    .split-bar {
+      display: flex;
+      height: 22px;
+      margin: 30px 0 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #252834;
+    }
+
+    .split-real { width: 54.96%; background: linear-gradient(90deg, #3153ff, #7899ff); }
+    .split-synth { width: 45.04%; background: #31364a; }
+
+    .split-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .split-legend strong { display: block; font-size: clamp(25px, 2.3vw, 38px); }
+    .split-legend span { color: var(--muted); font-size: clamp(14px, 1vw, 18px); }
+
+    .truth-note {
+      margin-top: 34px;
+      padding: 20px 0 0 22px;
+      border-left: 3px solid var(--blue);
+      color: #dce2f2;
+    }
+
+    .truth-note strong { color: var(--ink); }
+
+    .pipeline-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      counter-reset: step;
+    }
+
+    .pipeline-list li {
+      position: relative;
+      padding: 17px 0 17px 70px;
+      border-bottom: 1px solid var(--line);
+      color: #dce2f2;
+    }
+
+    .pipeline-list li:last-child { border-bottom: 0; }
+    .pipeline-list li::before {
+      counter-increment: step;
+      content: "0" counter(step);
+      position: absolute;
+      left: 0;
+      top: 18px;
+      color: var(--cyan);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .pipeline-list strong { color: var(--ink); }
+
+    .validity-strip {
+      display: flex;
+      gap: 18px 30px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: clamp(13px, 0.95vw, 17px);
+    }
+
+    .validity-strip span::before { content: "●"; color: var(--green); margin-right: 9px; }
+
+    .model-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+      gap: clamp(44px, 6vw, 90px);
+      align-items: center;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 42px 1fr 42px 1fr;
+      align-items: stretch;
+      margin: 4px 0 30px;
+    }
+
+    .flow-block {
+      min-height: 210px;
+      padding: 26px 24px;
+      border-top: 3px solid var(--blue);
+      background: linear-gradient(180deg, rgba(38,72,255,0.12), rgba(255,255,255,0.025));
+    }
+
+    .flow-block .kicker {
+      color: var(--cyan);
+      font-weight: 750;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .flow-block p { margin-bottom: 0; color: var(--muted); font-size: clamp(14px, 1vw, 18px); }
+    .arrow { display: grid; place-items: center; color: #657193; font-size: 25px; }
+
+    .feature-line {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      color: #cfd5e4;
+      font-size: clamp(13px, 0.95vw, 17px);
+    }
+
+    .feature-line span::before { content: "+"; color: var(--cyan); margin-right: 6px; font-weight: 800; }
+
+    .why {
+      padding-left: clamp(24px, 3vw, 46px);
+      border-left: 1px solid var(--line);
+    }
+
+    .why-number {
+      color: var(--blue);
+      font-size: clamp(54px, 6vw, 96px);
+      line-height: 0.9;
+      font-weight: 900;
+      letter-spacing: -0.06em;
+    }
+
+    .why h3 { margin-top: 14px; }
+    .why ul { padding-left: 20px; margin: 22px 0 0; color: var(--muted); }
+    .why li { margin: 12px 0; }
+
+    .metric-layout {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: clamp(46px, 6vw, 90px);
+      align-items: start;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0;
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+
+    .metric {
+      min-height: 178px;
+      padding: clamp(20px, 2.2vw, 34px);
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: clamp(42px, 5vw, 76px);
+      line-height: 0.95;
+      letter-spacing: -0.055em;
+    }
+
+    .metric span { color: var(--muted); font-size: clamp(13px, 1vw, 17px); }
+    .metric:nth-child(1) strong, .metric:nth-child(3) strong { color: var(--cyan); }
+
+    .evidence {
+      padding-top: 8px;
+    }
+
+    .evidence h3 { font-size: clamp(23px, 2vw, 32px); }
+    .benchmark {
+      margin: 24px 0 34px;
+      padding: 24px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .benchmark-row {
+      display: grid;
+      grid-template-columns: 115px 1fr 68px;
+      align-items: center;
+      gap: 14px;
+      margin: 14px 0;
+      font-size: clamp(14px, 1vw, 17px);
+    }
+
+    .bench-track { height: 9px; overflow: hidden; border-radius: 99px; background: #292d3a; }
+    .bench-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #3153ff, #7aa6ff); }
+    .bench-fill.naive { background: #596174; }
+
+    .limits {
+      display: grid;
+      gap: 13px;
+      color: var(--muted);
+      font-size: clamp(14px, 1vw, 17px);
+    }
+
+    .limits div { padding-left: 20px; position: relative; }
+    .limits div::before { content: "—"; position: absolute; left: 0; color: var(--amber); }
+
+    .future-layout {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(24px, 3.2vw, 48px);
+      margin-top: 8px;
+    }
+
+    .future-step {
+      position: relative;
+      min-height: 270px;
+      padding: 28px 0 0;
+      border-top: 3px solid var(--blue);
+    }
+
+    .future-step::after {
+      content: attr(data-step);
+      position: absolute;
+      right: 0;
+      top: 20px;
+      color: rgba(255,255,255,0.08);
+      font-size: clamp(52px, 5vw, 82px);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .future-step h3 { max-width: 75%; }
+    .future-step p { max-width: 92%; color: var(--muted); }
+
+    .final-line {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 30px;
+      align-items: end;
+      margin-top: clamp(32px, 5vh, 64px);
+      padding-top: clamp(24px, 3vh, 38px);
+      border-top: 1px solid var(--line);
+    }
+
+    .final-line strong {
+      display: block;
+      max-width: 1100px;
+      font-size: clamp(27px, 3vw, 48px);
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+    }
+
+    .final-line small { color: var(--muted); font-size: clamp(12px, 0.9vw, 16px); text-align: right; }
+
+    .slide-no {
+      position: absolute;
+      right: clamp(28px, 4vw, 62px);
+      top: clamp(25px, 3.4vw, 50px);
+      z-index: 5;
+      color: rgba(255,255,255,0.45);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+    }
+
+    .nav {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      background: rgba(11,12,17,0.7);
+      backdrop-filter: blur(12px);
+    }
+
+    .nav button {
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 50%;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .nav button:hover { background: rgba(255,255,255,0.08); }
+    .dots { display: flex; gap: 8px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #4c5365; transition: 200ms; }
+    .dot.active { width: 22px; border-radius: 6px; background: var(--blue); }
+
+    @media (max-width: 980px), (max-height: 720px) {
+      .slide { padding: 30px 44px 58px; }
+      .brand-grid, .data-layout, .model-layout, .metric-layout { gap: 34px; }
+      .scope-mark { width: min(34vw, 380px); }
+      .flow-block { min-height: 170px; padding: 20px; }
+      .metric { min-height: 142px; }
+      .future-step { min-height: 220px; }
+      .pipeline-list li { padding-top: 12px; padding-bottom: 12px; }
+      .pipeline-list li::before { top: 13px; }
+    }
+
+    @media (max-width: 760px) {
+      html, body { overflow: auto; }
+      .slide { position: relative; min-height: 100svh; height: auto; visibility: visible; opacity: 1; transform: none; }
+      .brand-grid, .data-layout, .model-layout, .metric-layout, .future-layout { grid-template-columns: 1fr; }
+      .scope-mark { display: none; }
+      .flow { grid-template-columns: 1fr; gap: 10px; }
+      .arrow { transform: rotate(90deg); }
+      .future-step { min-height: 0; }
+      .nav { display: none; }
+      .slide-no { display: none; }
+      .final-line { grid-template-columns: 1fr; }
+      .final-line small { text-align: left; }
+    }
+
+    @media print {
+      html, body { overflow: visible; background: var(--bg); }
+      .deck { height: auto; }
+      .slide {
+        position: relative;
+        width: 13.333in;
+        height: 7.5in;
+        padding: 0.55in 0.7in;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        page-break-after: always;
+      }
+      .nav { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-label="Презентация Tender Scope">
+    <section class="slide active" aria-labelledby="slide-1-title">
+      <span class="slide-no">01 / 05</span>
+      <div class="frame brand-grid">
+        <div>
+          <p class="eyebrow">Техническое решение</p>
+          <h1 id="slide-1-title">Tender<br>Scope</h1>
+          <p class="mission">Ранжирует закупки по статистической нетипичности, чтобы аналитик начинал ручную проверку с наиболее рискованных случаев.</p>
+          <div class="signal-row" aria-label="Ключевые параметры проекта">
+            <div class="signal"><strong>5</strong><span>риск-сигналов</span></div>
+            <div class="signal"><strong>0–100</strong><span>единый risk score</span></div>
+            <div class="signal"><strong>Human-in-loop</strong><span>решение остаётся за аналитиком</span></div>
+          </div>
+        </div>
+        <div class="scope-mark" aria-label="13 321 обработанный тендер"><small>обработанных тендеров</small></div>
+      </div>
+    </section>
+
+    <section class="slide" aria-labelledby="slide-2-title">
+      <span class="slide-no">02 / 05</span>
+      <div class="frame">
+        <p class="eyebrow">Данные и валидность</p>
+        <h2 id="slide-2-title">Реальные данные не дополнялись выдуманными полями</h2>
+        <div class="data-layout">
+          <div>
+            <div class="dataset-total">13 321</div>
+            <div class="dataset-label">строка в единой канонической схеме</div>
+            <div class="split-bar" aria-label="7 321 реальных и 6 000 синтетических записей">
+              <div class="split-real"></div><div class="split-synth"></div>
+            </div>
+            <div class="split-legend">
+              <div><strong>7 321</strong><span>scraped · реальные лоты</span></div>
+              <div><strong>6 000</strong><span>synthetic · валидация</span></div>
+            </div>
+            <p class="truth-note"><strong>Train / test:</strong> классического supervised split нет. Isolation Forest учится без меток отдельно внутри каждого source; ground truth synthetic раскрывается только после скоринга для оценки качества.</p>
+          </div>
+          <div>
+            <ol class="pipeline-list">
+              <li><strong>Сбор.</strong> 150 страниц открытого списка goszakup.gov.kz → 7 500 строк.</li>
+              <li><strong>Очистка.</strong> Дедупликация по lot_id → 7 321 уникальный лот.</li>
+              <li><strong>Нормализация.</strong> Даты, суммы, категории и способы закупки приведены к единой схеме.</li>
+              <li><strong>Честные пропуски.</strong> Недоступные участники, даты и победители остаются NaN + *_missing.</li>
+              <li><strong>Сопоставимость.</strong> Модель и percentile-rank считаются отдельно для scraped и synthetic.</li>
+            </ol>
+            <div class="validity-strip">
+              <span>официальный открытый портал</span>
+              <span>fixture на реальном HTML</span>
+              <span>source хранит происхождение</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-labelledby="slide-3-title">
+      <span class="slide-no">03 / 05</span>
+      <div class="frame">
+        <p class="eyebrow">Алгоритм и продуктовый контур</p>
+        <h2 id="slide-3-title">Isolation Forest ищет редкие комбинации, а интерфейс превращает score в проверяемый кейс</h2>
+        <div class="model-layout">
+          <div>
+            <div class="flow" aria-label="Поток работы решения">
+              <div class="flow-block">
+                <span class="kicker">01 · Признаки</span>
+                <h3>Контекст закупки</h3>
+                <p>Конкуренция, цена, окно подачи, концентрация побед и способ закупки.</p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="flow-block">
+                <span class="kicker">02 · Модель</span>
+                <h3>200 случайных деревьев</h3>
+                <p>Нетипичная запись изолируется меньшим числом разбиений и получает высокий anomaly score.</p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="flow-block">
+                <span class="kicker">03 · Действие</span>
+                <h3>Приоритет 0–100</h3>
+                <p>Таблица риска, разбор факторов и граф поставщиков направляют ручную проверку.</p>
+              </div>
+            </div>
+            <div class="feature-line" aria-label="Пять модельных признаков">
+              <span>один участник</span><span>цена относительно группы</span><span>короткое окно</span><span>HHI</span><span>способ закупки</span>
+            </div>
+          </div>
+          <aside class="why">
+            <div class="why-number">IF</div>
+            <h3>Почему именно Isolation Forest</h3>
+            <ul>
+              <li>реальных меток нарушений пока нет;</li>
+              <li>учитывает комбинацию сигналов, а не одно правило;</li>
+              <li>стабилен на 13K табличных строках, random_state = 42.</li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-labelledby="slide-4-title">
+      <span class="slide-no">04 / 05</span>
+      <div class="frame">
+        <p class="eyebrow">Качество и границы доказательства</p>
+        <h2 id="slide-4-title">Модель ранжирует synthetic-паттерны по всему диапазону, а не только в верхушке</h2>
+        <div class="metric-layout">
+          <div class="metric-grid" aria-label="Метрики качества на synthetic выборке">
+            <div class="metric"><strong>0.965</strong><span>ROC-AUC · качество ранжирования по всему диапазону</span></div>
+            <div class="metric"><strong>0.580</strong><span>Average Precision · при базовой доле позитивов 5.97%</span></div>
+            <div class="metric"><strong>79.61%</strong><span>Recall@top-10% · найдено 285 из 358 паттернов</span></div>
+            <div class="metric"><strong>47.50%</strong><span>Precision@top-10% · 285 из 600 приоритетных записей</span></div>
+          </div>
+          <aside class="evidence">
+            <h3>Почему это не случайный рейтинг</h3>
+            <div class="benchmark">
+              <div class="benchmark-row"><span>Tender Scope</span><div class="bench-track"><div class="bench-fill" style="width:79.61%"></div></div><strong>79.61%</strong></div>
+              <div class="benchmark-row"><span>случайно*</span><div class="bench-track"><div class="bench-fill naive" style="width:23.56%"></div></div><strong>23.56%</strong></div>
+              <div class="muted" style="font-size:13px; margin-top:12px">* тот же бюджет проверки, что у наивного правила</div>
+            </div>
+            <div class="limits">
+              <div><strong class="nowrap" style="color:var(--ink)">21 тест пройден.</strong> Пайплайн, признаки, модель и explainability проверяются автоматически.</div>
+              <div>Метрики относятся к synthetic с известным ground truth; scraped пока не имеет проверенных меток.</div>
+              <div>top_factors — описательный разбор отклонений, не строгая атрибуция Isolation Forest.</div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" aria-labelledby="slide-5-title">
+      <span class="slide-no">05 / 05</span>
+      <div class="frame">
+        <p class="eyebrow">Следующий этап</p>
+        <h2 id="slide-5-title">API превратит MVP в непрерывный контур риск-мониторинга</h2>
+        <div class="future-layout">
+          <article class="future-step" data-step="01">
+            <h3>После получения API</h3>
+            <p>Автоматическая загрузка новых лотов, участников, дат и победителей; версионирование данных и регулярный пересчёт score.</p>
+          </article>
+          <article class="future-step" data-step="02">
+            <h3>Масштабирование</h3>
+            <p>Инкрементальный pipeline, хранилище признаков, мониторинг drift и отдельные модели по рынкам с достаточным объёмом данных.</p>
+          </article>
+          <article class="future-step" data-step="03">
+            <h3>Бизнес-логика</h3>
+            <p>Обратная связь аналитиков, статусы проверок, правила повторных побед, связанные компании и калибровка порогов под ресурс команды.</p>
+          </article>
+        </div>
+        <div class="final-line">
+          <strong>Это не «ИИ ради галочки» и не prompt-архитектура: риск выводится из данных, статистики и воспроизводимой ML-модели.</strong>
+          <small>Tender Scope<br>приоритет для человека, не вердикт вместо него</small>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="Навигация по слайдам">
+    <button id="prev" type="button" aria-label="Предыдущий слайд">‹</button>
+    <div class="dots" aria-hidden="true"></div>
+    <button id="next" type="button" aria-label="Следующий слайд">›</button>
+  </nav>
+
+  <script>
+    (() => {
+      const slides = [...document.querySelectorAll('.slide')];
+      const dots = document.querySelector('.dots');
+      let current = 0;
+
+      slides.forEach((_, index) => {
+        const dot = document.createElement('span');
+        dot.className = `dot${index === 0 ? ' active' : ''}`;
+        dots.appendChild(dot);
+      });
+
+      const render = (index) => {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+        slides.forEach((slide, i) => slide.classList.toggle('active', i === current));
+        [...dots.children].forEach((dot, i) => dot.classList.toggle('active', i === current));
+        history.replaceState(null, '', `#${current + 1}`);
+      };
+
+      document.getElementById('prev').addEventListener('click', () => render(current - 1));
+      document.getElementById('next').addEventListener('click', () => render(current + 1));
+      document.addEventListener('keydown', (event) => {
+        if (['ArrowRight', 'PageDown', ' '].includes(event.key)) render(current + 1);
+        if (['ArrowLeft', 'PageUp'].includes(event.key)) render(current - 1);
+        if (event.key === 'Home') render(0);
+        if (event.key === 'End') render(slides.length - 1);
+      });
+      document.addEventListener('click', (event) => {
+        if (event.target.closest('.nav') || event.target.closest('a, button')) return;
+        render(current + 1);
+      });
+
+      const requested = Number(location.hash.slice(1));
+      if (requested >= 1 && requested <= slides.length) render(requested - 1);
+    })();
+  </script>
+</body>
+</html>
