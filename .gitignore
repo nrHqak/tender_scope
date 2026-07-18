@@ -8,3 +8,8 @@ __pycache__/
 data/raw/*.csv
 data/raw/*.json
 data/processed/*.parquet
+
+# Preserve project datasets in this private repository.
+!data/raw/goszakup_lots.csv
+!data/raw/synthetic_goszakup.csv
+!data/processed/scored_tenders.parquet
